@@ -1,7 +1,7 @@
 import cv2
 from detector_manos import DetectorManos
 from utils import calcular_fps, mostrar_texto
-from config import GESTOS
+from acciones import mover_mouse, click_mouse, abrir_bloc_notas, abrir_navegador
 
 detector = DetectorManos()
 cap = cv2.VideoCapture(0)
@@ -12,7 +12,7 @@ try:
         if not ret:
             break
 
-        frame = cv2.flip(frame, 1)
+        frame = cv2.flip(frame, 1)  # Espejo
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         resultados = detector.procesar(frame_rgb)
@@ -22,18 +22,31 @@ try:
             for hand_landmarks in resultados.multi_hand_landmarks:
                 dedos = detector.dedos_arriba(hand_landmarks)
 
-                # Mapeamos gestos
-                if sum(dedos) == 0:
-                    texto_gesto = "No"
+                # Coordenadas del índice (landmark 8)
+                x_indice = hand_landmarks.landmark[8].x * frame.shape[1]
+                y_indice = hand_landmarks.landmark[8].y * frame.shape[0]
+
+                # 1️⃣ Mover mouse con solo índice
+                if dedos[1] == 1 and sum(dedos) == 1:
+                    mover_mouse(x_indice, y_indice, frame.shape[1], frame.shape[0])
+                    texto_gesto = "Mover mouse"
+
+                # 2️⃣ Clic con índice + pulgar
+                elif dedos[0] == 1 and dedos[1] == 1 and sum(dedos) == 2:
+                    click_mouse()
+                    texto_gesto = "Clic"
+
+                # 3️⃣ Palma abierta (todos los dedos arriba) → Bloc de notas
+                elif sum(dedos) == 5:
+                    abrir_bloc_notas()
+                    texto_gesto = "Abrir Bloc de notas"
+
+                # 4️⃣ Like (solo pulgar arriba) → Navegador
                 elif dedos[0] == 1 and sum(dedos) == 1:
-                    texto_gesto = "Hola"
-                elif dedos[1] == 1 and sum(dedos) == 1:
-                    texto_gesto = "Sí"
+                    abrir_navegador()
+                    texto_gesto = "Abrir navegador"
 
-                # Ejecutar acción si existe en config
-                if texto_gesto in GESTOS:
-                    GESTOS[texto_gesto]()
-
+        # --- Mostrar FPS y gesto detectado ---
         fps = calcular_fps()
         if texto_gesto:
             mostrar_texto(frame, f"Gesto: {texto_gesto}", (50, 100))
