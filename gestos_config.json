@@ -1,16 +1,8 @@
 {
   "gestos": {
-    "palma_abierta": {
-      "accion": "abrir_app",
-      "programa": "notepad"
-    },
-    "like": {
-      "accion": "abrir_app",
-      "programa": "chrome"
-    },
-    "mano_derecha": {
-      "accion": "presentacion",
-      "direccion": "siguiente"
+    "palma_abierta": { 
+        "accion": "presentacion", 
+        "direccion": "siguiente" 
     },
     "mano_izquierda": {
       "accion": "presentacion",
