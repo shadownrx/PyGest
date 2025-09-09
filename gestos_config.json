@@ -1,0 +1,30 @@
+{
+  "gestos": {
+    "palma_abierta": {
+      "accion": "abrir_app",
+      "programa": "notepad"
+    },
+    "like": {
+      "accion": "abrir_app",
+      "programa": "chrome"
+    },
+    "mano_derecha": {
+      "accion": "presentacion",
+      "direccion": "siguiente"
+    },
+    "mano_izquierda": {
+      "accion": "presentacion",
+      "direccion": "anterior"
+    },
+    "indice_solamente": {
+      "accion": "mover_mouse"
+    },
+    "pinch": {
+      "accion": "clic"
+    }
+  },
+  "cooldowns": {
+    "clic": 0.5,
+    "abrir_app": 1.0
+  }
+}

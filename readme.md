@@ -1,40 +1,53 @@
-Hola Mundo nuevamente
+# Control por Gestos – V1.1
 
+¡Bienvenido a **Control por Gestos**!  
+Esta aplicación permite **controlar el mouse, abrir aplicaciones y manejar presentaciones** usando gestos de la mano capturados con la cámara.
 
-# 🖐️ Control por Gestos con Python
+## 🔹 Características principales
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.7-green)](https://opencv.org/)
-[![Mediapipe](https://img.shields.io/badge/Mediapipe-0.10-orange)](https://developers.google.com/mediapipe)
-[![PyAutoGUI](https://img.shields.io/badge/Automation-PyAutoGUI-red)](https://pyautogui.readthedocs.io/en/latest/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-Este proyecto permite **controlar tu computadora con gestos de la mano** usando **visión por computadora y Python**.  
-A través de la cámara web, se detectan posiciones de los dedos para mover el mouse, hacer clic y abrir aplicaciones como el Bloc de notas o el navegador.  
-
-Ideal como proyecto para **aprender OpenCV, Mediapipe y automatización con PyAutoGUI**. 🚀  
-
----
-
-## 🎥 Demo
-
-> 📌 Aquí puedes insertar un **GIF o video** mostrando los gestos en acción.  
-> Ejemplo:  
-> ```markdown
-> ![Demo](assets/demo.gif)
-> ```
+- Detección de manos con **MediaPipe**.
+- Control del **mouse**:
+  - Mover cursor con el **índice**.
+  - **Clic izquierdo** con gesto “pinch” (índice + pulgar).
+  - **Clic derecho** con gesto ✌️ (índice + medio levantados).
+  - **Arrastrar** con puño cerrado ✊.
+  - **Scroll** vertical con índice + medio levantados y moviéndose.
+- Abrir aplicaciones configurables desde `gestos_config.json`:
+  - Ej: Bloc de notas, navegador Chrome, Spotify.
+- Control de presentaciones:
+  - Avanzar y retroceder diapositivas (PowerPoint, PDF).
+- **FPS en pantalla** para monitorear rendimiento.
+- Gestos y cooldowns configurables mediante JSON.
+- Estructura modular: `main.py`, `gestos.py`, `acciones.py`, `detector_manos.py`, `utils.py`.
 
 ---
 
-## 🚀 Funcionalidades
+## 🔹 Gestos disponibles (V1.1)
 
-✅ Mover el mouse con el dedo índice  
-✅ Hacer clic con índice + pulgar  
-✅ Abrir **Bloc de notas** con la palma abierta 🖐️  
-✅ Abrir el **navegador (Google)** con un gesto de like 👍  
-✅ Mostrar FPS en pantalla  
+| Gesto | Acción | Descripción |
+|-------|--------|-------------|
+| Índice levantado | Mover mouse | Control del cursor con el dedo índice |
+| Pinch (índice+pulgar) | Clic izquierdo | Hace un clic |
+| ✌️ Índice + medio | Clic derecho | Hace clic derecho |
+| Puño cerrado ✊ | Drag | Mantiene el clic para arrastrar |
+| Índice + medio moviéndose | Scroll | Desplaza hacia arriba/abajo |
+| Palma abierta | Abrir aplicación | Configurable en `gestos_config.json` |
+| Pulgar arriba 👍 | Abrir aplicación | Configurable en JSON |
+| Mano derecha | Avanzar presentación | PowerPoint / PDF |
+| Mano izquierda | Retroceder presentación | PowerPoint / PDF |
 
 ---
 
-## 📂 Estructura del proyecto
+## 🔹 Configuración de gestos
 
+El archivo `gestos_config.json` permite **personalizar qué gesto hace qué acción**:
+
+```json
+{
+  "gestos": {
+    "palma_abierta": { "accion": "abrir_app", "programa": "notepad" },
+    "like": { "accion": "abrir_app", "programa": "chrome" },
+    "mano_derecha": { "accion": "presentacion", "direccion": "siguiente" },
+    "mano_izquierda": { "accion": "presentacion", "direccion": "anterior" }
+  },
+  "cooldowns": { "clic": 0.5, "abrir_app": 1.0, "presen_

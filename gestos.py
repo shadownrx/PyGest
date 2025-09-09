@@ -1,33 +1,17 @@
 import time
-import pyautogui
+import json
 
-# Configuración de cooldown y smoothing
-COOLDOWN_CLIC = 0.5
-ultimo_click = 0
-ultima_posicion = None
-historial_posiciones = []
+# Leer configuración de gestos
+with open("gestos_config.json", "r") as f:
+    config = json.load(f)
 
-def suavizar_movimiento(x, y, max_historial=5):
-    """
-    Aplica suavizado usando un promedio de las últimas posiciones.
-    """
-    global historial_posiciones
-    historial_posiciones.append((x, y))
-    if len(historial_posiciones) > max_historial:
-        historial_posiciones.pop(0)
-    prom_x = sum(p[0] for p in historial_posiciones) / len(historial_posiciones)
-    prom_y = sum(p[1] for p in historial_posiciones) / len(historial_posiciones)
-    return int(prom_x), int(prom_y)
-
+# Variables globales
+ultimo_tiempo = {}
 
 def detectar_gesto(hand_landmarks, frame_shape, detector):
     """
-    Detecta gestos a partir de los landmarks de la mano.
-    Retorna (accion, datos) donde:
-        - accion: string con el tipo de gesto ("mover", "clic", "clic_derecho", "scroll", "drag", None)
-        - datos: información adicional (ej: coordenadas)
+    Detecta el gesto actual según landmarks y retorna la acción y datos.
     """
-    global ultimo_click, ultima_posicion
     dedos = detector.dedos_arriba(hand_landmarks)
 
     # Coordenadas índice y pulgar
@@ -36,42 +20,40 @@ def detectar_gesto(hand_landmarks, frame_shape, detector):
     x_pulgar = int(hand_landmarks.landmark[4].x * frame_shape[1])
     y_pulgar = int(hand_landmarks.landmark[4].y * frame_shape[0])
 
-    # --- Gestos ---
-    # 1️⃣ Mover mouse (solo índice levantado)
-    if dedos[1] == 1 and sum(dedos) == 1:
-        x_suave, y_suave = suavizar_movimiento(x_indice, y_indice)
-        return "mover", (x_suave, y_suave, frame_shape[1], frame_shape[0])
-
-    # 2️⃣ Clic izquierdo (pinch índice + pulgar)
-    distancia = ((x_indice - x_pulgar) ** 2 + (y_indice - y_pulgar) ** 2) ** 0.5
+    # Determinar gesto
+    gesto = None
+    # Palma abierta
+    if sum(dedos) == 5:
+        gesto = "palma_abierta"
+    # Like (solo pulgar arriba)
+    elif dedos[0] == 1 and sum(dedos) == 1:
+        gesto = "like"
+    # Mano derecha (para presentaciones)
+    elif dedos[1] == 1 and sum(dedos) == 1:
+        gesto = "mano_derecha"
+    # Mano izquierda
+    elif dedos[2] == 1 and sum(dedos) == 1:
+        gesto = "mano_izquierda"
+    # Índice solo → mover mouse
+    elif dedos[1] == 1 and sum(dedos) == 1:
+        gesto = "indice_solamente"
+    # Pinch → clic
+    distancia = ((x_indice - x_pulgar)**2 + (y_indice - y_pulgar)**2)**0.5
     if distancia < 30:
+        gesto = "pinch"
+
+    # Cooldown
+    accion = None
+    datos = None
+    if gesto and gesto in config["gestos"]:
+        accion_info = config["gestos"][gesto]
+        accion = accion_info["accion"]
+        datos = accion_info.get("programa") or accion_info.get("direccion")
+        # Cooldown
+        cd = config.get("cooldowns", {}).get(accion, 0.5)
         tiempo_actual = time.time()
-        if tiempo_actual - ultimo_click > COOLDOWN_CLIC:
-            ultimo_click = tiempo_actual
-            return "clic", None
+        if ultimo_tiempo.get(accion, 0) + cd > tiempo_actual:
+            return None, None
+        ultimo_tiempo[accion] = tiempo_actual
 
-    # 3️⃣ Clic derecho (✌️ índice + medio arriba)
-    if dedos[1] == 1 and dedos[2] == 1 and sum(dedos) == 2:
-        tiempo_actual = time.time()
-        if tiempo_actual - ultimo_click > COOLDOWN_CLIC:
-            ultimo_click = tiempo_actual
-            return "clic_derecho", None
-
-    # 4️⃣ Scroll (índice + medio levantados moviéndose)
-    if dedos[1] == 1 and dedos[2] == 1 and sum(dedos) == 2:
-        if ultima_posicion:
-            dy = y_indice - ultima_posicion[1]
-            if abs(dy) > 20:  # movimiento vertical
-                if dy < 0:
-                    return "scroll", "arriba"
-                else:
-                    return "scroll", "abajo"
-        ultima_posicion = (x_indice, y_indice)
-
-    # 5️⃣ Drag (puño cerrado ✊)
-    if sum(dedos) == 0:
-        return "drag", "down"
-    elif sum(dedos) == 5 and ultima_posicion:  # abre la mano
-        return "drag", "up"
-
-    return None, None
+    return accion, datos, (x_indice, y_indice, frame_shape[1], frame_shape[0])
