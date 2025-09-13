@@ -1,0 +1,22 @@
+{
+  "gestos": {
+    "palma_abierta": { 
+        "accion": "presentacion", 
+        "direccion": "siguiente" 
+    },
+    "mano_izquierda": {
+      "accion": "presentacion",
+      "direccion": "anterior"
+    },
+    "indice_solamente": {
+      "accion": "mover_mouse"
+    },
+    "pinch": {
+      "accion": "clic"
+    }
+  },
+  "cooldowns": {
+    "clic": 0.5,
+    "abrir_app": 1.0
+  }
+}

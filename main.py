@@ -1,61 +1,90 @@
 import cv2
 from detector_manos import DetectorManos
 from utils import calcular_fps, mostrar_texto
-from acciones import mover_mouse, click_mouse, abrir_bloc_notas, abrir_navegador
+from gestos import detectar_gesto
+from acciones import (
+    mover_mouse, click_mouse, click_derecho, hacer_scroll,
+    drag_mouse, abrir_app, presentacion
+)
 
+# Inicializar detector y cámara
 detector = DetectorManos()
 cap = cv2.VideoCapture(0)
 
-try:
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
 
-        frame = cv2.flip(frame, 1)  # Espejo
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+def procesar_frame(frame):
+    """
+    Procesa un frame: detección de manos + gestos.
+    """
+    frame = cv2.flip(frame, 1)  # espejo
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    resultados = detector.procesar(frame_rgb)
 
-        resultados = detector.procesar(frame_rgb)
-        texto_gesto = ""
+    texto_gesto = None
 
-        if resultados.multi_hand_landmarks:
-            for hand_landmarks in resultados.multi_hand_landmarks:
-                dedos = detector.dedos_arriba(hand_landmarks)
+    if resultados.multi_hand_landmarks:
+        for hand_landmarks in resultados.multi_hand_landmarks:
 
-                # Coordenadas del índice (landmark 8)
-                x_indice = hand_landmarks.landmark[8].x * frame.shape[1]
-                y_indice = hand_landmarks.landmark[8].y * frame.shape[0]
+            # Detectar gesto
+            resultado = detectar_gesto(hand_landmarks, frame.shape, detector)
+            if resultado is None:
+                continue  # no hay gesto detectado
+            accion, datos, coords = resultado
 
-                # 1️⃣ Mover mouse con solo índice
-                if dedos[1] == 1 and sum(dedos) == 1:
-                    mover_mouse(x_indice, y_indice, frame.shape[1], frame.shape[0])
-                    texto_gesto = "Mover mouse"
+            # Ejecutar acción según tipo de gesto
+            if accion == "mover_mouse" and coords:
+                mover_mouse(*coords)
+                texto_gesto = "Mover mouse"
 
-                # 2️⃣ Clic con índice + pulgar
-                elif dedos[0] == 1 and dedos[1] == 1 and sum(dedos) == 2:
-                    click_mouse()
-                    texto_gesto = "Clic"
+            elif accion == "clic":
+                click_mouse()
+                texto_gesto = "Clic izquierdo"
 
-                # 3️⃣ Palma abierta (todos los dedos arriba) → Bloc de notas
-                elif sum(dedos) == 5:
-                    abrir_bloc_notas()
-                    texto_gesto = "Abrir Bloc de notas"
+            elif accion == "clic_derecho":
+                click_derecho()
+                texto_gesto = "Clic derecho"
 
-                # 4️⃣ Like (solo pulgar arriba) → Navegador
-                elif dedos[0] == 1 and sum(dedos) == 1:
-                    abrir_navegador()
-                    texto_gesto = "Abrir navegador"
+            elif accion == "scroll" and datos:
+                hacer_scroll(datos)
+                texto_gesto = f"Scroll {datos}"
 
-        # --- Mostrar FPS y gesto detectado ---
-        fps = calcular_fps()
-        if texto_gesto:
-            mostrar_texto(frame, f"Gesto: {texto_gesto}", (50, 100))
-        mostrar_texto(frame, f"FPS: {fps}", (10, 30), (255, 0, 0))
+            elif accion == "drag" and datos:
+                drag_mouse(datos)
+                texto_gesto = f"Drag {datos}"
 
-        cv2.imshow("Control por gestos", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            elif accion == "abrir_app" and datos:
+                abrir_app(datos)
+                texto_gesto = f"Abrir {datos}"
 
-finally:
-    cap.release()
-    cv2.destroyAllWindows()
+            elif accion == "presentacion" and datos:
+                presentacion(datos)
+                texto_gesto = f"Presentación {datos}"
+
+    # Mostrar FPS y gesto
+    fps = calcular_fps()
+    if texto_gesto:
+        mostrar_texto(frame, f"Gesto: {texto_gesto}", (50, 100))
+    mostrar_texto(frame, f"FPS: {fps}", (10, 30), (255, 0, 0))
+
+    return frame
+
+
+def main():
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            frame = procesar_frame(frame)
+            cv2.imshow("Control por gestos v1.1", frame)
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
